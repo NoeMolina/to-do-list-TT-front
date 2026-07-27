@@ -1,59 +1,68 @@
-# TodoListFrontend
+# Listo — To-Do List Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
+Interfaz web para la gestión de tareas y subtareas, con autenticación JWT y vistas diferenciadas por rol (admin / usuario).
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- **Angular 21** (standalone components, Signals, zoneless)
+- **PrimeNG 21** — librería de componentes
+- **Tailwind CSS v4** — estilos utility-first
+- **pnpm** — gestor de paquetes
 
-```bash
-ng serve
-```
+## Requisitos previos
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Node.js compatible con Angular 21
+- pnpm
+- Backend corriendo en `http://localhost:8080` (ver README del backend)
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Instalación
 
 ```bash
-ng generate --help
+pnpm install
 ```
 
-## Building
-
-To build the project run:
+## Ejecutar en desarrollo
 
 ```bash
-ng build
+pnpm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+La app queda disponible en `http://localhost:4200`.
 
-## Running unit tests
+## Estructura del proyecto
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
+```
+src/app/
+├── models/          → Interfaces TypeScript (equivalentes a los DTOs del backend)
+├── services/        → Llamadas HTTP a la API (uno por recurso)
+├── guards/          → authGuard, protege rutas que requieren sesión iniciada
+├── interceptors/     → authInterceptor, agrega el JWT a cada request
+├── layout/          → Layout base con navbar (usuario actual, logout)
+├── pages/           → Pantallas de la app (login, task-list)
+├── app.config.ts
+├── app.routes.ts
+└── app.ts
 ```
 
-## Running end-to-end tests
+## Autenticación
 
-For end-to-end (e2e) testing, run:
+- El login (`/login`) es la única pantalla pública. No existe registro público: los usuarios nuevos los crea un admin desde el backend (`POST /auth/register`).
+- El estado de sesión (token, username, rol) se maneja con **Signals** en `AuthService`, persistido en `localStorage`.
+- El rol (`ADMIN`/`USER`) se extrae directamente del JWT decodificado en el cliente, solo para efectos de mostrar/ocultar UI — el backend siempre revalida permisos en cada request.
 
-```bash
-ng e2e
-```
+## Funcionalidad principal
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+- **Tablero tipo Kanban** con 3 columnas: Pendientes, En progreso, Finalizadas (Completadas + Canceladas).
+- Botones de transición de estatus según el ciclo de vida válido (mismo definido en el backend).
+- Creación de tareas con categoría y fecha de vencimiento.
+- Gestión de subtareas por tarea (crear, listar, cambiar estatus) desde un modal.
+- **Vista de administrador:**
+  - Ve todas las tareas del sistema, no solo las propias.
+  - Puede asignar una tarea nueva a cualquier usuario.
+  - Cada tarjeta distingue visualmente tareas propias (borde teal) de las de otros usuarios (borde gris), mostrando el username correspondiente.
 
-## Additional Resources
+## Notas de configuración
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- El tema de PrimeNG está forzado a modo claro (`darkModeSelector: false` en `app.config.ts`) para evitar inconsistencias con el modo oscuro del sistema operativo.
+- Los overlays de PrimeNG dentro de modales (datepicker, selects) usan `appendTo="body"` para evitar que se recorten visualmente.
+- La URL base de la API se configura en `src/environments/environment.ts` / `environment.development.ts` (`apiUrl`).
