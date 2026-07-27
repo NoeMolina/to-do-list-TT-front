@@ -1,0 +1,31 @@
+<div class="min-h-screen bg-gray-50">
+
+  <nav class="bg-white border-b border-gray-200 px-6 py-3">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+
+      <span class="font-semibold text-gray-900">Listo</span>
+
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">{{ authService.username() }}</span>
+
+        @if (authService.isAdmin()) {
+          <p-tag value="Admin" severity="info" />
+        }
+
+        <p-button
+          label="Cerrar sesión"
+          severity="secondary"
+          [text]="true"
+          size="small"
+          (onClick)="onLogout()"
+        />
+      </div>
+
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <router-outlet />
+  </main>
+
+</div>

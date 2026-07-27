@@ -1,0 +1,273 @@
+<p-toast />
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-semibold text-gray-900">Mis tareas</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      @if (authService.isAdmin()) {
+        Viendo todas las tareas del sistema
+      } @else {
+        Tareas asignadas a ti
+      }
+    </p>
+  </div>
+
+  <p-button label="Nueva tarea" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+</div>
+
+@if (loading()) {
+  <div class="text-center text-gray-400 py-16">Cargando tareas…</div>
+} @else {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+    @for (column of columns(); track column.key) {
+      <div class="bg-gray-100 rounded-xl p-3">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h2 class="text-sm font-semibold text-gray-700">{{ column.title }}</h2>
+          <span class="text-xs text-gray-400 bg-white rounded-full px-2 py-0.5">
+            {{ column.tasks.length }}
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-2 min-h-[80px]">
+          @for (task of column.tasks; track task.id) {
+            <div
+              class="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
+              [class.border-l-4]="authService.isAdmin()"
+              [class.border-l-teal-500]="authService.isAdmin() && isOwnTask(task)"
+              [class.border-l-gray-300]="authService.isAdmin() && !isOwnTask(task)"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <span class="font-medium text-gray-900 text-sm">{{ task.title }}</span>
+                <p-tag
+                  [value]="statusLabel(task.status.code)"
+                  [severity]="statusSeverity(task.status.code)"
+                  class="shrink-0"
+                />
+              </div>
+
+              @if (authService.isAdmin()) {
+                <div class="flex items-center gap-1.5 mt-1.5 text-xs">
+                  <i
+                    class="pi pi-user text-[10px]"
+                    [class.text-teal-600]="isOwnTask(task)"
+                    [class.text-gray-400]="!isOwnTask(task)"
+                  ></i>
+                  <span
+                    [class.text-teal-600]="isOwnTask(task)"
+                    [class.text-gray-500]="!isOwnTask(task)"
+                    [class.font-medium]="isOwnTask(task)"
+                  >
+                    {{ isOwnTask(task) ? 'Tú' : usernameFor(task.userId) }}
+                  </span>
+                </div>
+              }
+
+              @if (task.description) {
+                <p class="text-xs text-gray-500 mt-1.5 line-clamp-2">{{ task.description }}</p>
+              }
+
+              <div class="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                <i class="pi pi-tag text-[10px]"></i>
+                <span>{{ task.category.name }}</span>
+                @if (task.dueDate) {
+                  <span class="text-gray-300">•</span>
+                  <i class="pi pi-calendar text-[10px]"></i>
+                  <span>{{ task.dueDate }}</span>
+                }
+              </div>
+
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <p-button
+                  label="Subtareas"
+                  icon="pi pi-list"
+                  size="small"
+                  [text]="true"
+                  class="cursor-pointer transition-transform hover:scale-105 active:scale-95"
+                  (onClick)="openSubtasks(task)"
+                />
+
+                <div class="flex gap-1.5">
+                  @for (nextStatus of nextStatuses(task.status.code); track nextStatus) {
+                    <p-button
+                      [label]="statusLabel(nextStatus)"
+                      size="small"
+                      [outlined]="true"
+                      [severity]="statusSeverity(nextStatus)"
+                      [class]="statusButtonClass(nextStatus)"
+                      (onClick)="changeStatus(task, nextStatus)"
+                    />
+                  }
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="text-center text-xs text-gray-400 py-6">Sin tareas aquí</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<p-dialog
+  header="Nueva tarea"
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+  [contentStyle]="{ padding: '1.5rem' }"
+>
+  <form [formGroup]="form" (ngSubmit)="submitCreate()" class="flex flex-col gap-4">
+    <div class="flex flex-col gap-1.5">
+      <label for="title" class="text-sm font-medium text-gray-700">Título</label>
+      <input id="title" type="text" pInputText formControlName="title" class="w-full" />
+      @if (form.get('title')?.invalid && form.get('title')?.touched) {
+        <small class="text-red-500">El título es obligatorio</small>
+      }
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="description" class="text-sm font-medium text-gray-700">Descripción</label>
+      <textarea
+        id="description"
+        pTextarea
+        formControlName="description"
+        rows="3"
+        class="w-full"
+      ></textarea>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="category" class="text-sm font-medium text-gray-700">Categoría</label>
+      <p-select
+        id="category"
+        formControlName="categoryId"
+        [options]="categories()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Selecciona una categoría"
+        class="w-full"
+      />
+      @if (form.get('categoryId')?.invalid && form.get('categoryId')?.touched) {
+        <small class="text-red-500">La categoría es obligatoria</small>
+      }
+    </div>
+
+    @if (authService.isAdmin()) {
+      <div class="flex flex-col gap-1.5">
+        <label for="userId" class="text-sm font-medium text-gray-700">Asignar a</label>
+        <p-select
+          id="userId"
+          formControlName="userId"
+          [options]="users()"
+          optionLabel="username"
+          optionValue="id"
+          placeholder="Tú mismo (por defecto)"
+          [showClear]="true"
+          class="w-full"
+        />
+      </div>
+    }
+
+    <div class="flex flex-col gap-1.5">
+      <label for="dueDate" class="text-sm font-medium text-gray-700">Fecha de vencimiento</label>
+      <p-datepicker
+        id="dueDate"
+        formControlName="dueDate"
+        dateFormat="yy-mm-dd"
+        [showIcon]="true"
+        appendTo="body"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex justify-end gap-2 mt-2">
+      <p-button
+        label="Cancelar"
+        severity="secondary"
+        [text]="true"
+        type="button"
+        (onClick)="dialogVisible.set(false)"
+      />
+      <p-button label="Crear" type="submit" [loading]="saving()" />
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog
+  [header]="'Subtareas: ' + (selectedTask()?.title ?? '')"
+  [(visible)]="subtaskDialogVisible"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  [contentStyle]="{ padding: '1.5rem' }"
+>
+  @if (subtasksLoading()) {
+    <div class="text-center text-gray-400 py-8">Cargando subtareas…</div>
+  } @else {
+    <div class="flex flex-col gap-2 mb-4 max-h-72 overflow-y-auto">
+      @for (subtask of subtasks(); track subtask.id) {
+        <div class="bg-gray-50 rounded-lg border border-gray-200 p-3">
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-medium text-gray-900 text-sm">{{ subtask.title }}</span>
+            <p-tag
+              [value]="statusLabel(subtask.status.code)"
+              [severity]="statusSeverity(subtask.status.code)"
+              class="shrink-0"
+            />
+          </div>
+
+          @if (subtask.description) {
+            <p class="text-xs text-gray-500 mt-1">{{ subtask.description }}</p>
+          }
+
+          @if (nextStatuses(subtask.status.code).length > 0) {
+            <div class="flex gap-1.5 mt-2">
+              @for (nextStatus of nextStatuses(subtask.status.code); track nextStatus) {
+                <p-button
+                  [label]="statusLabel(nextStatus)"
+                  size="small"
+                  [outlined]="true"
+                  [severity]="statusSeverity(nextStatus)"
+                  [class]="statusButtonClass(nextStatus)"
+                  (onClick)="changeSubtaskStatus(subtask, nextStatus)"
+                />
+              }
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="text-center text-xs text-gray-400 py-4">Sin subtareas todavía</div>
+      }
+    </div>
+  }
+
+  <form
+    [formGroup]="subtaskForm"
+    (ngSubmit)="submitCreateSubtask()"
+    class="flex flex-col gap-3 pt-4 border-t border-gray-100"
+  >
+    <div class="flex flex-col gap-1.5">
+      <label for="subtaskTitle" class="text-sm font-medium text-gray-700">Nueva subtarea</label>
+      <input
+        id="subtaskTitle"
+        type="text"
+        pInputText
+        formControlName="title"
+        placeholder="Título"
+        class="w-full"
+      />
+      @if (subtaskForm.get('title')?.invalid && subtaskForm.get('title')?.touched) {
+        <small class="text-red-500">El título es obligatorio</small>
+      }
+    </div>
+
+    <textarea
+      pTextarea
+      formControlName="description"
+      rows="2"
+      placeholder="Descripción (opcional)"
+      class="w-full"
+    ></textarea>
+
+    <p-button label="Agregar subtarea" type="submit" [loading]="savingSubtask()" class="self-end" />
+  </form>
+</p-dialog>

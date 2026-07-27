@@ -1,0 +1,55 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+  <div class="w-full max-w-sm bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+
+    <div class="mb-6 text-center">
+      <h1 class="text-2xl font-semibold text-gray-900">Iniciar sesión</h1>
+      <p class="text-sm text-gray-500 mt-1">Ingresa tus credenciales para continuar</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+
+      @if (errorMessage()) {
+        <p-message severity="error" [text]="errorMessage()!" styleClass="w-full" />
+      }
+
+      <div class="flex flex-col gap-1.5">
+        <label for="username" class="text-sm font-medium text-gray-700">Usuario</label>
+        <input
+          id="username"
+          type="text"
+          pInputText
+          formControlName="username"
+          placeholder="tu usuario"
+          class="w-full"
+          autocomplete="username"
+        />
+        @if (form.get('username')?.invalid && form.get('username')?.touched) {
+          <small class="text-red-500">El usuario es obligatorio</small>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label for="password" class="text-sm font-medium text-gray-700">Contraseña</label>
+        <p-password
+          id="password"
+          formControlName="password"
+          placeholder="••••••••"
+          [feedback]="false"
+          [toggleMask]="true"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+        />
+        @if (form.get('password')?.invalid && form.get('password')?.touched) {
+          <small class="text-red-500">La contraseña es obligatoria</small>
+        }
+      </div>
+
+      <p-button
+        type="submit"
+        label="Ingresar"
+        styleClass="w-full mt-2"
+        [loading]="loading()"
+      />
+    </form>
+  </div>
+</div>
