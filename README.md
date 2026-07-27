@@ -1,4 +1,4 @@
-# Listo — To-Do List Frontend
+# To-Do List Frontend
 
 Interfaz web para la gestión de tareas y subtareas, con autenticación JWT y vistas diferenciadas por rol (admin / usuario).
 
